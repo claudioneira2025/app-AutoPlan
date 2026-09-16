@@ -1,0 +1,1094 @@
+<div class="app">
+
+  <!-- CABECERA -->
+  <div class="top">
+    <div>
+      <h1>Al día</h1>
+      <p>Tus vehículos y sus documentos, siempre a mano.</p>
+    </div>
+  </div>
+
+  <!-- PESTAÑAS -->
+  <div class="tabs">
+
+    <button
+      class="tab-btn"
+      [class.active]="tab === 'vehiculos'"
+      (click)="setTab('vehiculos')"
+    >
+      Vehículos
+    </button>
+
+    <button
+      class="tab-btn"
+      [class.active]="tab === 'talleres'"
+      (click)="setTab('talleres')"
+    >
+      Talleres cercanos
+    </button>
+
+    <button
+      class="tab-btn"
+      [class.active]="tab === 'mantenimiento'"
+      (click)="setTab('mantenimiento')"
+    >
+      Mantenimiento
+    </button>
+
+  </div>
+
+  <div style="height: 20px;"></div>
+
+
+  <!-- ===================================================== -->
+  <!-- VEHÍCULOS -->
+  <!-- ===================================================== -->
+
+  <div
+    class="layout"
+    *ngIf="tab === 'vehiculos'"
+  >
+
+    <!-- LISTA DE VEHÍCULOS -->
+    <div class="sidebar">
+
+      <button
+        class="plate-card"
+        *ngFor="let v of vehiculos"
+
+        [class.selected]="
+          v.patente === selectedPatente
+        "
+
+        (click)="selectVehicle(v.patente)"
+      >
+
+        <div class="plate-num">
+          {{ v.patente }}
+        </div>
+
+        <div class="plate-sub">
+
+          {{ v.marca }} {{ v.modelo }}
+
+          <span *ngIf="v.anio">
+            · {{ v.anio }}
+          </span>
+
+        </div>
+
+        <div class="plate-status">
+
+          <span
+            class="dot"
+            [ngClass]="worstStatus(v)"
+          ></span>
+
+        </div>
+
+      </button>
+
+
+      <!-- AGREGAR VEHÍCULO -->
+      <button
+        class="add-btn"
+        (click)="openVehicleModal()"
+      >
+        + Agregar vehículo
+      </button>
+
+    </div>
+
+
+    <!-- PANEL PRINCIPAL -->
+    <div class="panel">
+
+      <ng-container
+        *ngIf="selectedVehicle as v; else noVehicle"
+      >
+
+        <!-- CABECERA VEHÍCULO -->
+        <div class="vehicle-head">
+
+          <div>
+
+            <div class="plate-num">
+              {{ v.patente }}
+            </div>
+
+            <div class="vehicle-meta">
+
+              {{ v.marca || '—' }}
+              {{ v.modelo }}
+
+              <span *ngIf="v.anio">
+                · {{ v.anio }}
+              </span>
+
+              <span *ngIf="v.color">
+                · {{ v.color }}
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <!-- ACCIONES VEHÍCULO -->
+          <div class="head-actions">
+
+            <button
+              class="icon-btn"
+              title="Editar vehículo"
+              (click)="openVehicleModal(v.patente)"
+            >
+              ✎
+            </button>
+
+            <button
+              class="icon-btn"
+              title="Eliminar vehículo"
+              (click)="deleteVehicle(v.patente)"
+            >
+              ✕
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- DOCUMENTOS -->
+        <!-- ================================================= -->
+
+        <div class="doc-grid">
+
+          <div
+            class="doc-card"
+
+            *ngFor="let dt of docTypes"
+
+            [ngClass]="
+              docStatus(
+                v.documentos?.[dt.key]
+              ).level
+            "
+          >
+
+            <!-- NOMBRE DEL DOCUMENTO -->
+            <div class="doc-title">
+              {{ dt.label }}
+            </div>
+
+
+            <!-- NÚMERO -->
+            <div class="doc-row">
+
+              N°:
+
+              {{
+                v.documentos?.[dt.key]?.numero
+                || '—'
+              }}
+
+            </div>
+
+
+            <!-- VENCIMIENTO -->
+            <div class="doc-row">
+
+              Vence:
+
+              {{
+                fmtDate(
+                  v.documentos?.[dt.key]?.vencimiento
+                )
+              }}
+
+            </div>
+
+
+            <!-- NOTAS -->
+            <div
+              class="doc-row"
+
+              *ngIf="
+                v.documentos?.[dt.key]?.notas
+              "
+            >
+
+              {{
+                v.documentos?.[dt.key]?.notas
+              }}
+
+            </div>
+
+            <ng-container *ngIf="dt.key === 'licenciaConducir'; else singleDocumentPhoto">
+              <div class="license-photo-grid">
+                <div *ngIf="v.documentos?.[dt.key]?.fotoFrente" class="doc-preview">
+                  <img [src]="v.documentos?.[dt.key]?.fotoFrente" alt="Frente de la licencia" />
+                  <button class="doc-open-preview" type="button" (click)="openDocumentPreview(v.documentos?.[dt.key], 'fotoFrente')">Ver frente</button>
+                </div>
+                <div *ngIf="v.documentos?.[dt.key]?.fotoAtras" class="doc-preview">
+                  <img [src]="v.documentos?.[dt.key]?.fotoAtras" alt="Reverso de la licencia" />
+                  <button class="doc-open-preview" type="button" (click)="openDocumentPreview(v.documentos?.[dt.key], 'fotoAtras')">Ver reverso</button>
+                </div>
+              </div>
+            </ng-container>
+
+            <ng-template #singleDocumentPhoto>
+              <div class="doc-preview" *ngIf="v.documentos?.[dt.key]?.foto">
+                <img *ngIf="!isPdfDataUrl(v.documentos?.[dt.key]?.foto)" [src]="v.documentos?.[dt.key]?.foto" alt="Foto del documento" />
+                <img *ngIf="isPdfDataUrl(v.documentos?.[dt.key]?.foto) && v.documentos?.[dt.key]?.miniatura" [src]="v.documentos?.[dt.key]?.miniatura" alt="Vista previa del PDF" />
+                <div class="doc-pdf-placeholder" *ngIf="isPdfDataUrl(v.documentos?.[dt.key]?.foto) && !v.documentos?.[dt.key]?.miniatura">PDF</div>
+              </div>
+              <button class="doc-open-preview" *ngIf="v.documentos?.[dt.key]?.foto" type="button" (click)="openDocumentPreview(v.documentos?.[dt.key])">
+                {{ isPdfDataUrl(v.documentos?.[dt.key]?.foto) ? 'Ver PDF' : 'Ver foto' }}
+              </button>
+            </ng-template>
+
+            <div
+              class="doc-digital"
+              [ngClass]="
+                v.documentos?.[dt.key]?.digitalizado
+                  ? 'digitalizado'
+                  : 'pendiente'
+              "
+            >
+              {{
+                v.documentos?.[dt.key]?.digitalizado
+                  ? 'Digitalizado'
+                  : 'No digitalizado'
+              }}
+            </div>
+
+            <div
+              class="doc-file"
+              *ngIf="
+                v.documentos?.[dt.key]?.archivo
+              "
+            >
+              {{
+                v.documentos?.[dt.key]?.archivo
+              }}
+            </div>
+
+
+            <!-- ESTADO -->
+            <span
+              class="doc-status"
+
+              [ngClass]="
+                docStatus(
+                  v.documentos?.[dt.key]
+                ).level
+              "
+            >
+
+              {{
+                docStatus(
+                  v.documentos?.[dt.key]
+                ).text
+              }}
+
+            </span>
+
+
+            <br />
+
+
+            <!-- EDITAR DOCUMENTO -->
+            <button
+              class="doc-edit"
+
+              (click)="
+                openDocModal(
+                  v.patente,
+                  dt.key
+                )
+              "
+            >
+              Editar
+            </button>
+
+          </div>
+
+        </div>
+
+      </ng-container>
+
+
+      <!-- ================================================= -->
+      <!-- SIN VEHÍCULOS -->
+      <!-- ================================================= -->
+
+      <ng-template #noVehicle>
+
+        <div class="empty">
+
+          <h3>
+            Todavía no agregas ningún vehículo
+          </h3>
+
+          <p>
+            Registra la patente de tu auto para
+            empezar a guardar sus documentos.
+          </p>
+
+          <button
+            class="btn primary"
+            (click)="openVehicleModal()"
+          >
+            Agregar vehículo
+          </button>
+
+        </div>
+
+      </ng-template>
+
+    </div>
+
+  </div>
+
+
+  <!-- ===================================================== -->
+  <!-- TALLERES -->
+  <!-- ===================================================== -->
+
+  <div
+    class="panel"
+    *ngIf="tab === 'talleres'"
+  >
+
+    <div
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+        gap: 10px;
+      "
+    >
+
+      <h2 style="font-size: 17px;">
+        Talleres cercanos
+      </h2>
+
+      <button
+        class="btn primary"
+        (click)="openTallerModal()"
+      >
+        + Agregar taller
+      </button>
+
+    </div>
+
+
+    <!-- SIN TALLERES -->
+    <div
+      class="empty"
+      *ngIf="!talleres.length"
+    >
+
+      <h3>
+        Todavía no agregas talleres
+      </h3>
+
+      <p>
+        Guarda los talleres que usas para
+        tenerlos siempre a mano.
+      </p>
+
+    </div>
+
+
+    <!-- LISTA DE TALLERES -->
+    <div
+      class="taller-grid"
+      *ngIf="talleres.length"
+    >
+
+      <div
+        class="taller-card"
+
+        *ngFor="
+          let t of talleres;
+          let i = index
+        "
+      >
+
+        <!-- ACCIONES -->
+        <div class="taller-actions">
+
+          <button
+            class="icon-btn"
+            title="Editar"
+            (click)="openTallerModal(i)"
+          >
+            ✎
+          </button>
+
+          <button
+            class="icon-btn"
+            title="Eliminar"
+            (click)="deleteTaller(i)"
+          >
+            ✕
+          </button>
+
+        </div>
+
+
+        <!-- NOMBRE -->
+        <h3>
+          {{ t.nombre }}
+        </h3>
+
+
+        <!-- DIRECCIÓN -->
+        <div
+          class="taller-row"
+          *ngIf="t.direccion"
+        >
+          {{ t.direccion }}
+        </div>
+
+
+        <!-- TELÉFONO -->
+        <div
+          class="taller-row"
+          *ngIf="t.telefono"
+        >
+          {{ t.telefono }}
+        </div>
+
+
+        <!-- NOTAS -->
+        <div
+          class="taller-row"
+          *ngIf="t.notas"
+        >
+          {{ t.notas }}
+        </div>
+
+
+        <!-- ESPECIALIDAD -->
+        <span
+          class="taller-tag"
+          *ngIf="t.especialidad"
+        >
+          {{ t.especialidad }}
+        </span>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- MANTENIMIENTO -->
+  <!-- ===================================================== -->
+
+  <div class="panel maintenance-panel" *ngIf="tab === 'mantenimiento'">
+    <ng-container *ngIf="selectedVehicle as v; else noMaintenanceVehicle">
+      <div class="maintenance-head">
+        <div>
+          <div class="plate-num">{{ v.patente }}</div>
+          <div class="vehicle-meta">
+            {{ v.marca || '—' }} {{ v.modelo }}
+            <span *ngIf="v.anio">· {{ v.anio }}</span>
+          </div>
+        </div>
+
+        <button class="btn primary" type="button" (click)="openMantenimientoModal(v.patente)">
+          + Agregar mantenimiento
+        </button>
+      </div>
+
+      <div class="maintenance-summary">
+        <span class="dot" [ngClass]="worstMantenimientoStatus(v)"></span>
+        <span>
+          {{ v.mantenimientos?.length || 0 }} registro{{ (v.mantenimientos?.length || 0) === 1 ? '' : 's' }}
+        </span>
+        <span class="maintenance-km" *ngIf="v.kilometrajeActual">
+          Kilometraje actual: {{ v.kilometrajeActual }} km
+        </span>
+        <button class="btn" type="button" (click)="openMantenimientoModal(v.patente)">
+          Registrar servicio
+        </button>
+      </div>
+
+      <div class="maintenance-list" *ngIf="sortedMantenimientos(v).length; else noMaintenanceRecords">
+        <article class="maintenance-card" *ngFor="let m of sortedMantenimientos(v)">
+          <div class="maintenance-card-head">
+            <div>
+              <h3>{{ m.tipo }}</h3>
+              <div class="maintenance-date">{{ fmtDate(m.fecha) }}</div>
+            </div>
+            <div class="head-actions">
+              <button class="icon-btn" type="button" title="Editar mantenimiento" (click)="openMantenimientoModal(v.patente, m.id)">✎</button>
+              <button class="icon-btn" type="button" title="Eliminar mantenimiento" (click)="deleteMantenimiento(v.patente, m.id)">✕</button>
+            </div>
+          </div>
+
+          <div class="maintenance-details">
+            <span *ngIf="m.kilometraje">Servicio a {{ m.kilometraje }} km</span>
+            <span *ngIf="m.proximoKm">Próximo: {{ m.proximoKm }} km</span>
+            <span *ngIf="m.proximaFecha">Próxima fecha: {{ fmtDate(m.proximaFecha) }}</span>
+          </div>
+          <p class="maintenance-notes" *ngIf="m.notas">{{ m.notas }}</p>
+          <span class="maintenance-status" [ngClass]="mantenimientoStatus(v, m).level">
+            {{ mantenimientoStatus(v, m).text }}
+          </span>
+        </article>
+      </div>
+
+      <ng-template #noMaintenanceRecords>
+        <div class="empty maintenance-empty">
+          <h3>Aún no hay mantenimientos registrados</h3>
+          <p>Guarda cambios de aceite, revisiones y próximos servicios para {{ v.patente }}.</p>
+          <button class="btn primary" type="button" (click)="openMantenimientoModal(v.patente)">
+            Agregar primer mantenimiento
+          </button>
+        </div>
+      </ng-template>
+    </ng-container>
+
+    <ng-template #noMaintenanceVehicle>
+      <div class="empty">
+        <h3>Primero agrega un vehículo</h3>
+        <p>Necesitas un vehículo para registrar su mantenimiento.</p>
+        <button class="btn primary" type="button" (click)="setTab('vehiculos'); openVehicleModal()">
+          Agregar vehículo
+        </button>
+      </div>
+    </ng-template>
+  </div>
+
+
+  <!-- ===================================================== -->
+  <!-- MODALES -->
+  <!-- ===================================================== -->
+
+  <div
+    class="overlay preview-overlay"
+    *ngIf="documentPreviewUrl"
+    (click)="$event.target === $event.currentTarget && closeDocumentPreview()"
+  >
+    <div class="preview-modal">
+      <div class="preview-header">
+        <h3>{{ documentPreviewName }}</h3>
+        <button type="button" class="icon-btn" (click)="closeDocumentPreview()">✕</button>
+      </div>
+
+      <img
+        *ngIf="!isPdfDataUrl(documentPreviewUrl)"
+        [src]="documentPreviewUrl"
+        alt="Documento ampliado"
+        class="preview-image"
+      />
+
+      <iframe
+        *ngIf="isPdfDataUrl(documentPreviewUrl)"
+        [src]="safeDocumentPreviewUrl"
+        title="Documento PDF"
+        class="preview-pdf"
+      ></iframe>
+    </div>
+  </div>
+
+  <div
+    class="overlay"
+    *ngIf="modal"
+
+    (click)="
+      $event.target === $event.currentTarget
+      && closeModal()
+    "
+  >
+
+    <div class="modal">
+
+
+      <!-- ================================================= -->
+      <!-- MODAL VEHÍCULO -->
+      <!-- ================================================= -->
+
+      <ng-container
+        *ngIf="modal.type === 'vehicle'"
+      >
+
+        <h2>
+
+          {{
+            modal.editingPatente
+              ? 'Editar vehículo'
+              : 'Agregar vehículo'
+          }}
+
+        </h2>
+
+
+        <form>
+
+          <!-- PATENTE -->
+          <div class="field">
+
+            <label>
+              Patente
+            </label>
+
+            <input
+              [(ngModel)]="modal.data.patente"
+              name="patente"
+              placeholder="AB1234"
+              maxlength="8"
+              style="text-transform: uppercase;"
+            />
+
+          </div>
+
+
+          <!-- MARCA -->
+          <div class="field">
+
+            <label>
+              Marca
+            </label>
+
+            <input
+              [(ngModel)]="modal.data.marca"
+              name="marca"
+              placeholder="Toyota"
+            />
+
+          </div>
+
+
+          <!-- MODELO -->
+          <div class="field">
+
+            <label>
+              Modelo
+            </label>
+
+            <input
+              [(ngModel)]="modal.data.modelo"
+              name="modelo"
+              placeholder="Yaris"
+            />
+
+          </div>
+
+
+          <!-- AÑO -->
+          <div class="field">
+
+            <label>
+              Año
+            </label>
+
+            <input
+              [(ngModel)]="modal.data.anio"
+              name="anio"
+              placeholder="2020"
+            />
+
+          </div>
+
+
+          <!-- COLOR -->
+          <div class="field">
+
+            <label>
+              Color
+            </label>
+
+            <input
+              [(ngModel)]="modal.data.color"
+              name="color"
+              placeholder="Gris"
+            />
+
+          </div>
+
+
+          <!-- ERROR -->
+          <div
+            class="field-error"
+            *ngIf="fieldError"
+          >
+            {{ fieldError }}
+          </div>
+
+
+          <!-- BOTONES -->
+          <div class="modal-actions">
+
+            <button
+              type="button"
+              class="btn"
+              (click)="closeModal()"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="button"
+              class="btn primary"
+              [disabled]="isSavingVehicle"
+              (click)="submitVehicleForm()"
+            >
+              {{ isSavingVehicle ? 'Guardando...' : 'Guardar' }}
+            </button>
+
+          </div>
+
+        </form>
+
+      </ng-container>
+
+
+      <!-- ================================================= -->
+      <!-- MODAL DOCUMENTO -->
+      <!-- ================================================= -->
+
+      <ng-container
+        *ngIf="modal.type === 'doc'"
+      >
+
+        <h2>
+          {{ docLabel(modal.docKey) }}
+        </h2>
+
+
+        <form>
+
+          <!-- NÚMERO -->
+          <div class="field">
+
+            <label>
+              Número / folio (opcional)
+            </label>
+
+            <input
+              [(ngModel)]="modal.data.numero"
+              name="numero"
+            />
+
+          </div>
+
+
+          <!-- FECHA -->
+          <div class="field">
+
+            <label>
+              Fecha de vencimiento
+            </label>
+
+            <input
+              type="date"
+              [(ngModel)]="modal.data.vencimiento"
+              name="vencimiento"
+            />
+
+          </div>
+
+
+          <!-- NOTAS -->
+          <div class="field">
+
+            <label>
+              Notas (opcional)
+            </label>
+
+            <textarea
+              [(ngModel)]="modal.data.notas"
+              name="notas"
+            ></textarea>
+
+          </div>
+
+          <div class="field checkbox-row">
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                [(ngModel)]="modal.data.digitalizado"
+                name="digitalizado"
+              />
+              Documento digitalizado
+            </label>
+          </div>
+
+          <div class="field">
+            <label>
+              Nombre del archivo / código digital
+            </label>
+            <input
+              [(ngModel)]="modal.data.archivo"
+              name="archivo"
+              placeholder="seguro-AB1234.pdf"
+            />
+          </div>
+
+          <ng-container *ngIf="modal.docKey === 'licenciaConducir'; else singlePhotoField">
+            <div class="field">
+              <label>Foto frontal de la licencia</label>
+              <div class="file-picker">
+                <button type="button" class="btn" (click)="openFilePicker(documentFileInputFront)">Elegir frente</button>
+                <input #documentFileInputFront class="file-picker-input" type="file" accept="image/*" (change)="onDocPhotoSelected($event, 'fotoFrente')" aria-label="Elegir foto frontal" />
+              </div>
+              <img *ngIf="modal.data.fotoFrente" [src]="modal.data.fotoFrente" alt="Vista previa del frente" class="doc-photo-preview" />
+            </div>
+
+            <div class="field">
+              <label>Foto trasera de la licencia</label>
+              <div class="file-picker">
+                <button type="button" class="btn" (click)="openFilePicker(documentFileInputBack)">Elegir reverso</button>
+                <input #documentFileInputBack class="file-picker-input" type="file" accept="image/*" (change)="onDocPhotoSelected($event, 'fotoAtras')" aria-label="Elegir foto trasera" />
+              </div>
+              <img *ngIf="modal.data.fotoAtras" [src]="modal.data.fotoAtras" alt="Vista previa del reverso" class="doc-photo-preview" />
+            </div>
+          </ng-container>
+
+          <ng-template #singlePhotoField>
+            <div class="field">
+              <label>Foto o PDF del documento</label>
+              <div class="file-picker">
+                <button type="button" class="btn" (click)="openFilePicker(documentFileInput)">Elegir archivo</button>
+                <input #documentFileInput class="file-picker-input" type="file" accept="image/*,application/pdf" (change)="onDocPhotoSelected($event)" aria-label="Elegir archivo" />
+              </div>
+            </div>
+          </ng-template>
+
+          <div class="field" *ngIf="modal.data.foto">
+            <img
+              [src]="modal.data.foto"
+              alt="Vista previa del documento"
+              class="doc-photo-preview"
+            />
+          </div>
+
+          <div
+            class="field-error"
+            *ngIf="fieldError"
+          >
+            {{ fieldError }}
+          </div>
+
+          <!-- BOTONES -->
+          <div class="modal-actions">
+
+            <button
+              type="button"
+              class="btn"
+              (click)="closeModal()"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="button"
+              class="btn primary"
+              [disabled]="isSavingDocument"
+              (click)="submitDocForm()"
+            >
+              {{ isSavingDocument ? 'Guardando...' : 'Guardar' }}
+            </button>
+
+          </div>
+
+        </form>
+
+      </ng-container>
+
+
+      <!-- ================================================= -->
+      <!-- MODAL MANTENIMIENTO -->
+      <!-- ================================================= -->
+
+      <ng-container *ngIf="modal.type === 'mantenimiento'">
+        <h2>{{ modal.editingId ? 'Editar mantenimiento' : 'Agregar mantenimiento' }}</h2>
+
+        <form>
+          <div class="field">
+            <label>Tipo de mantenimiento</label>
+            <input [(ngModel)]="modal.data.tipo" name="tipo" placeholder="Cambio de aceite" />
+          </div>
+
+          <div class="field">
+            <label>Fecha</label>
+            <input type="date" [(ngModel)]="modal.data.fecha" name="fecha" />
+          </div>
+
+          <div class="field">
+            <label>Kilometraje del servicio</label>
+            <input [(ngModel)]="modal.data.kilometraje" name="kilometraje" inputmode="numeric" placeholder="85000" />
+          </div>
+
+          <div class="field">
+            <label>Próximo kilometraje</label>
+            <input [(ngModel)]="modal.data.proximoKm" name="proximoKm" inputmode="numeric" placeholder="90000" />
+          </div>
+
+          <div class="field">
+            <label>Próxima fecha</label>
+            <input type="date" [(ngModel)]="modal.data.proximaFecha" name="proximaFecha" />
+          </div>
+
+          <div class="field">
+            <label>Notas (opcional)</label>
+            <textarea [(ngModel)]="modal.data.notas" name="notas"></textarea>
+          </div>
+
+          <div class="field-error" *ngIf="fieldError">{{ fieldError }}</div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn" (click)="closeModal()">Cancelar</button>
+            <button type="button" class="btn primary" (click)="submitMantenimientoForm()">Guardar</button>
+          </div>
+        </form>
+      </ng-container>
+
+
+      <!-- ================================================= -->
+      <!-- MODAL TALLER -->
+      <!-- ================================================= -->
+
+      <ng-container
+        *ngIf="modal.type === 'taller'"
+      >
+
+        <h2>
+
+          {{
+            modal.editingIndex !== null
+              ? 'Editar taller'
+              : 'Agregar taller'
+          }}
+
+        </h2>
+
+
+        <form>
+
+          <!-- NOMBRE -->
+          <div class="field">
+
+            <label>
+              Nombre
+            </label>
+
+            <input
+              [(ngModel)]="modal.data.nombre"
+              name="nombre"
+              placeholder="Taller Los Ases"
+            />
+
+          </div>
+
+
+          <!-- DIRECCIÓN -->
+          <div class="field">
+
+            <label>
+              Dirección
+            </label>
+
+            <input
+              [(ngModel)]="modal.data.direccion"
+              name="direccion"
+            />
+
+          </div>
+
+
+          <!-- TELÉFONO -->
+          <div class="field">
+
+            <label>
+              Teléfono
+            </label>
+
+            <input
+              [(ngModel)]="modal.data.telefono"
+              name="telefono"
+            />
+
+          </div>
+
+
+          <!-- ESPECIALIDAD -->
+          <div class="field">
+
+            <label>
+              Especialidad
+            </label>
+
+            <input
+              [(ngModel)]="modal.data.especialidad"
+              name="especialidad"
+              placeholder="Mecánica general"
+            />
+
+          </div>
+
+
+          <!-- NOTAS -->
+          <div class="field">
+
+            <label>
+              Notas (opcional)
+            </label>
+
+            <textarea
+              [(ngModel)]="modal.data.notas"
+              name="notas"
+            ></textarea>
+
+          </div>
+
+
+          <!-- ERROR -->
+          <div
+            class="field-error"
+            *ngIf="fieldError"
+          >
+            {{ fieldError }}
+          </div>
+
+
+          <!-- BOTONES -->
+          <div class="modal-actions">
+
+            <button
+              type="button"
+              class="btn"
+              (click)="closeModal()"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="button"
+              class="btn primary"
+              [disabled]="isSavingTaller"
+              (click)="submitTallerForm()"
+            >
+              {{ isSavingTaller ? 'Guardando...' : 'Guardar' }}
+            </button>
+
+          </div>
+
+        </form>
+
+      </ng-container>
+
+    </div>
+
+  </div>
+
+</div>

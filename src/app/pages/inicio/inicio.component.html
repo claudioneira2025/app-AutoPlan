@@ -1,0 +1,54 @@
+<div class="login-page">
+  <div class="login-bg-blur login-bg-blur-one"></div>
+  <div class="login-bg-blur login-bg-blur-two"></div>
+
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="brand-mark">🚗</div>
+      <div>
+        <p class="brand-eyebrow">AutoPlan</p>
+        <h2>Control de Acceso</h2>
+      </div>
+    </div>
+
+    <div *ngIf="error" class="login-alert">
+      {{ error }}
+    </div>
+
+    <form #formLogin="ngForm" (ngSubmit)="login()" class="login-form">
+      <div class="field-group">
+        <label class="form-label" for="usuario">Usuario</label>
+        <input
+          id="usuario"
+          type="text"
+          class="form-control"
+          [(ngModel)]="usuario"
+          name="usuario"
+          required
+          minlength="3"
+          maxlength="20"
+          placeholder="Introduce tu usuario"
+        >
+      </div>
+
+      <div class="field-group">
+        <label class="form-label" for="password">Contraseña</label>
+        <input
+          id="password"
+          type="password"
+          class="form-control"
+          [(ngModel)]="password"
+          name="password"
+          required
+          minlength="3"
+          maxlength="20"
+          placeholder="••••••••"
+        >
+      </div>
+
+      <button type="submit" class="login-button" [disabled]="formLogin.invalid">
+        Ingresar al Sistema
+      </button>
+    </form>
+  </div>
+</div>
